@@ -1,0 +1,1 @@
+Folder for all project-internal source code and header files.

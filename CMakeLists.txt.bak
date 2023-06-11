@@ -1,0 +1,24 @@
+cmake_minimum_required(VERSION 3.0.0)
+project(ARDatacenter VERSION 0.1.0 LANGUAGES C CXX)
+
+include(CTest)
+enable_testing()
+
+# Set the path to OpenCV (replace "/path/to/opencv" with your actual OpenCV installation path)
+set(OpenCV_DIR "/usr/local/include/opencv4")
+
+# Find OpenCV package
+find_package(OpenCV REQUIRED)
+
+message(STATUS "OpenCV_INCLUDE_DIRS = ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV_LIBS = ${OpenCV_LIBS}")
+
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+add_executable(ARDatacenter main.cpp)
+
+set(CPACK_PROJECT_NAME ${PROJECT_NAME})
+set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
+include(CPack)
+
+target_link_libraries(ARDatacenter ${OpenCV_LIBS})

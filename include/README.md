@@ -1,0 +1,1 @@
+This folder contains only headers which will need to be expoased publicly. I expect that it will remain empty.

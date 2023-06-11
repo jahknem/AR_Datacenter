@@ -1,0 +1,154 @@
+#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
+#include <opencv2/aruco/charuco.hpp>
+#include <iostream>
+
+using namespace cv;
+using namespace std;
+
+class MarkerDetector {
+    cv::aruco::Dictionary dictionary;
+    cv::aruco::DetectorParameters params;
+    aruco::ArucoDetector detector;
+
+    public:
+        MarkerDetector() {
+            // Set up ArUco dictionary and parameters
+            dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+            params = cv::aruco::DetectorParameters();
+            detector = aruco::ArucoDetector(dictionary, params);
+        }
+
+        std::pair<cv::Mat, std::vector<int>> step(cv::Mat& image) {
+            std::vector<int> ids;
+            std::vector<std::vector<cv::Point2f>> corners;
+            std::vector<std::vector<cv::Point2f>> rejectedCandidates;
+
+            // Detect markers
+            detector.detectMarkers(image, corners, ids, rejectedCandidates);
+
+            if (!ids.empty()) {
+                for (size_t i = 0; i < ids.size(); i++) {
+                    std::cout << "Marker " << i << ": ID = " << ids[i] << std::endl;
+                    std::cout << "Corners:" << std::endl;
+                    for (const cv::Point2f& corner : corners[i]) {
+                        std::cout << "  " << corner << std::endl;
+                    }
+                }
+            }
+
+            // Draw detected markers on the image
+            if (!ids.empty()) {
+                cv::aruco::drawDetectedMarkers(image, corners, ids);
+            }
+            return std::make_pair(image, ids);
+        }
+
+        void run(cv::VideoCapture& cap) {
+            while (true) {
+                cv::Mat frame;
+                cap >> frame;
+                if (frame.empty()) break;  // end of video stream
+                std::pair<cv::Mat, std::vector<int>> result = step(frame);
+                cv::Mat marked = result.first;
+                cv::imshow("Marked Frame", marked);
+                if (cv::waitKey(1) >= 0) break;  // stop on any key press
+            }
+        }
+};
+
+class CameraCalibrator {
+    cv::Ptr<cv::aruco::CharucoBoard> charucoBoard;
+    cv::Ptr<cv::aruco::DetectorParameters> detectorParams;
+    cv::Ptr<cv::aruco::Dictionary> dictionary;
+    vector<vector<vector<Point2f>>> allCorners;
+    vector<vector<int>> allIds;
+    Size imgSize;
+
+public:
+    CameraCalibrator(cv::Ptr<cv::aruco::CharucoBoard> board) {
+        detectorParams = makePtr<aruco::DetectorParameters>(aruco::DetectorParameters());
+        dictionary = makePtr<aruco::Dictionary>(aruco::getPredefinedDictionary(aruco::DICT_6X6_250));
+        charucoBoard = board;
+    }
+
+    bool processFrame(Mat& image) {
+        vector<int> ids;
+        vector<vector<Point2f>> corners, rejected;
+        aruco::detectMarkers(image, dictionary, corners, ids, detectorParams, rejected);
+
+        vector<Point2f> charucoCorners;
+        vector<int> charucoIds;
+
+        if (!ids.empty()) {
+            aruco::interpolateCornersCharuco(corners, ids, image, charucoBoard, charucoCorners, charucoIds);
+
+            if (charucoCorners.size() > 0) {
+                allCorners.push_back(corners);
+                allIds.push_back(ids);
+                imgSize = image.size();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void calibrate() {
+        if (allCorners.size() > 0) {
+            vector<Mat> rvecs, tvecs;
+            Mat cameraMatrix, distCoeffs;
+            aruco::calibrateCameraCharuco(allCorners, allIds, charucoBoard, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+            cv::FileStorage fs("calibration.yml", cv::FileStorage::WRITE);
+            fs << "cameraMatrix" << cameraMatrix;
+            fs << "distCoeffs" << distCoeffs;
+            fs.release();
+        }
+    }
+
+    void loadCalibration() {
+        cv::FileStorage fs("calibration.yml", cv::FileStorage::READ);
+        cv::Mat cameraMatrix, distCoeffs;
+        fs["cameraMatrix"] >> cameraMatrix;
+        fs["distCoeffs"] >> distCoeffs;
+        fs.release();
+    }
+    void calibrateFromVideo(VideoCapture& cap) {
+        while (true) {
+            cv::Mat frame;
+            cap >> frame;
+            if (frame.empty()) break;  // end of video stream
+            bool detected = processFrame(frame);
+
+            if (detected) {
+                imshow("Calibration", frame);
+                if (waitKey(30) >= 0) break;
+            }
+        }
+        calibrate();
+    }
+};
+
+int main( int argc, char** argv )
+{
+
+    // capture video from camera and display it
+    VideoCapture cap(0);
+    if(!cap.isOpened())
+    {
+        cout << "Could not open camera" << endl;
+        return -1;
+    }   
+    // Set frames per second
+    cap.set(cv::CAP_PROP_FPS, 30);
+
+    // Load image from test.png
+
+    MarkerDetector detector;
+    detector.run(cap);
+
+    // Close the video file or capturing device
+    cap.release();
+    return 0;
+}
