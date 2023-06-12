@@ -23,3 +23,39 @@ Steps:
 6. Get Information about Device from Netbox
 7. Display Information on Overlay
 
+cmake commands for building opencv:
+```
+cmake `
+-D WITH_TBB=ON `
+-D WITH_OPENMP=ON `
+<# CUDA #> `
+-D WITH_NVCUVID=ON `
+-D WITH_CUDA=ON `
+-D CUDA_ARCH_BIN=6.1 `
+-D ARCH=sm_61 `
+-D gencode=arch=compute_61,code=sm_61 `
+-D CUDA_FAST_MATH=ON `
+-D WITH_CUBLAS=ON `
+-D WITH_CUFFT=ON `
+-D OPENCV_DNN_CUDA=ON `
+<# CUDA Modules #> `
+-D WITH_IPP=ON `
+-D WITH_CSTRIPES=ON `
+-D WITH_OPENCL=ON `
+-D ENABLE_PROFILING=ON `
+-D OPENCV_ENABLE_NONFREE=ON `
+-D CMAKE_BUILD_TYPE=Debug `
+-D BUILD_SHARED_LIBS=OFF `
+-D BUILD_EXAMPLES=ON `
+-D DBUILD_opencv_world=ON `
+-D OPENCV_EXTRA_MODULES_PATH=C:\Users\jan\Projects\OpenCV_Build\opencv_contrib\modules `
+-D BUILD_NEW_PYTHON_SUPPORT=ON `
+-D BUILD_opencv_python3=ON `
+-D HAVE_opencv_python3=ON `
+-D PYTHON_DEFAULT_EXECUTABLE=C:\Users\jan\AppData\Local\Programs\Python\Python310\python.exe `
+-D PYTHON3_INCLUDE_DIR=C:\Users\jan\AppData\Local\Programs\Python\Python310\include `
+-D PYTHON3_LIBRARY=C:\Users\jan\AppData\Local\Programs\Python\Python310\libs\python310.lib `
+-D PYTHON3_NUMPY_INCLUDE_DIRS=C:\Users\jan\AppData\Local\Programs\Python\Python310\Lib\site-packages\numpy\core\include `
+-D CMAKE_INSTALL_PREFIX=C:/OpenCV ..
+
+```
